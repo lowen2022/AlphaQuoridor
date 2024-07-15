@@ -18,7 +18,7 @@ class GameUI(tk.Frame):
         self.state = State()
         self.N = self.state.N
         self.D = 200  # Cell size (pixels)
-        self.L = self.N * self.D # Canvas size
+        self.L = self.N * self.D  # Canvas size
 
         self.select = -1  # Selection (-1: none, 0~(N*N-1): square)
         self.placing_wall = False  # Flag to indicate if we are placing a wall
@@ -58,6 +58,10 @@ class GameUI(tk.Frame):
         self.wall_horizontal_button.pack()
         self.wall_vertical_button.pack()
 
+        # Result message
+        self.result_message = tk.Label(self, text="", font=('Helvetica', 60))
+        self.result_message.grid(row=0, column=1, pady=10)
+
         # Updating the drawing
         self.on_draw()
 
@@ -71,8 +75,6 @@ class GameUI(tk.Frame):
         D = self.D
         # If the game is over
         if self.state.is_done():
-            self.state = State()
-            self.on_draw()
             return
 
         # If it is not the first player's turn
@@ -130,6 +132,8 @@ class GameUI(tk.Frame):
     def turn_of_ai(self):
         # If the game is over
         if self.state.is_done():
+            self.display_result()
+            self.master.after(1000, self.reset_game)
             return
 
         # Get the action
@@ -138,6 +142,23 @@ class GameUI(tk.Frame):
         # Get the next state
         self.state = self.state.next(action)
         self.on_draw()
+
+        if self.state.is_done():
+            self.display_result()
+            self.master.after(1000, self.reset_game)
+            return
+
+    def display_result(self):
+        is_lose = self.state.is_lose() if self.state.is_first_player() else not self.state.is_lose()
+        if is_lose:
+            self.result_message.config(text="You Lose", fg="blue")
+        else:
+            self.result_message.config(text="You Win", fg="red")
+    
+    def reset_game(self):
+        self.state = State()
+        self.on_draw()
+        self.result_message.config(text="")
 
     # Draw the piece
     def draw_piece(self, index, color):
@@ -169,7 +190,7 @@ class GameUI(tk.Frame):
         D = self.D
         L = self.L
         is_first_player = self.state.is_first_player()
-        
+
         # Grid
         self.c.delete('all')
         self.c.create_rectangle(0, 0, L, L, width=0.0, fill='#4B4B4B')
